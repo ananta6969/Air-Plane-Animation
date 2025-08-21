@@ -289,22 +289,116 @@
     let cursorY = window.innerHeight / 2;
     let speed = 0.03;
     let lastAngle = 0;
+    let lastTiltX = 0;
+    let lastTiltY = 0;
     let autoPilotMode = true;
     let targetX = Math.random() * banner.offsetWidth;
     let targetY = Math.random() * banner.offsetHeight;
     let autoSpeed = 2;
 
+    // Create smoke container
+    const smokeContainer = document.createElement('div');
+    smokeContainer.style.position = 'fixed';
+    smokeContainer.style.top = '0';
+    smokeContainer.style.left = '0';
+    smokeContainer.style.width = '100%';
+    smokeContainer.style.height = '100%';
+    smokeContainer.style.pointerEvents = 'none';
+    smokeContainer.style.zIndex = '1';
+    document.body.appendChild(smokeContainer);
+
+    // Smoke particles array
+    let smokeParticles = [];
+
+    // Function to create a smoke particle
+    function createSmokeParticle(x, y, angle) {
+        const smoke = document.createElement('div');
+        smoke.className = 'smoke-particle';
+        smoke.style.position = 'absolute';
+        smoke.style.width = '15px';
+        smoke.style.height = '15px';
+        smoke.style.background = 'radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(200,200,200,0.3) 70%, rgba(150,150,150,0) 100%)';
+        smoke.style.borderRadius = '50%';
+        smoke.style.left = x + 'px';
+        smoke.style.top = y + 'px';
+        smoke.style.opacity = '0';
+        smoke.style.transform = 'scale(0.5)';
+        smoke.style.transition = 'opacity 1.5s ease-out, transform 2s ease-out';
+        
+        smokeContainer.appendChild(smoke);
+        
+        // Animate the smoke
+        setTimeout(() => {
+            smoke.style.opacity = '0.7';
+            smoke.style.transform = 'scale(1)';
+        }, 10);
+        
+        // Calculate movement direction based on plane angle
+        const radAngle = (angle - 90) * Math.PI / 180;
+        const moveX = Math.cos(radAngle) * 20;
+        const moveY = Math.sin(radAngle) * 20;
+        
+        // Store particle data
+        const particle = {
+            element: smoke,
+            x: x,
+            y: y,
+            velocityX: (Math.random() - 0.5) * 0.5 - moveX * 0.3,
+            velocityY: (Math.random() - 0.5) * 0.5 - moveY * 0.3,
+            life: 100,
+            size: Math.random() * 5 + 10
+        };
+        
+        smokeParticles.push(particle);
+        
+        // Remove particle after animation
+        setTimeout(() => {
+            smoke.style.opacity = '0';
+            smoke.style.transform = 'scale(2) translate(' + (Math.random() * 40 - 20) + 'px, ' + (Math.random() * 40 - 20) + 'px)';
+            
+            setTimeout(() => {
+                if (smoke.parentNode) {
+                    smoke.parentNode.removeChild(smoke);
+                }
+                smokeParticles = smokeParticles.filter(p => p.element !== smoke);
+            }, 1500);
+        }, 1000);
+    }
+
+    // Function to update smoke particles
+    function updateSmoke() {
+        for (let i = 0; i < smokeParticles.length; i++) {
+            const particle = smokeParticles[i];
+            particle.life--;
+            particle.x += particle.velocityX;
+            particle.y += particle.velocityY;
+            
+            particle.element.style.left = particle.x + 'px';
+            particle.element.style.top = particle.y + 'px';
+            particle.element.style.opacity = (particle.life / 100) * 0.7;
+            
+            if (particle.life <= 0) {
+                particle.element.style.opacity = '0';
+                if (particle.element.parentNode) {
+                    particle.element.parentNode.removeChild(particle.element);
+                }
+                smokeParticles.splice(i, 1);
+                i--;
+            }
+        }
+    }
+
     // Get banner position and dimensions
     function getBannerBounds() {
-      const rect = banner.getBoundingClientRect();
-      return {
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height
-      };
+        const rect = banner.getBoundingClientRect();
+        return {
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height
+        };
     }
 
     // Set initial position within banner
@@ -314,137 +408,222 @@
     cursor.style.left = cursorX - cursor.offsetWidth / 2 + 'px';
     cursor.style.top = cursorY - cursor.offsetHeight / 2 + 'px';
 
+    // Add 3D perspective to the cursor container
+    cursor.style.perspective = '1000px';
+    const planeImg = cursor.querySelector('img');
+    planeImg.style.transformStyle = 'preserve-3d';
+    planeImg.style.transition = 'transform 0.3s ease-out';
+
     // Update mouse position only when over banner
     banner.addEventListener('mousemove', e => {
-      mouseX = e.pageX;
-      mouseY = e.pageY;
-      autoPilotMode = false; // Switch to mouse following when mouse moves
+        mouseX = e.pageX;
+        mouseY = e.pageY;
+        autoPilotMode = false; // Switch to mouse following when mouse moves
     });
 
     // Reset to auto pilot when mouse leaves banner
     banner.addEventListener('mouseleave', () => {
-      autoPilotMode = true;
+        autoPilotMode = true;
     });
+
+    // Variables for smoke emission
+    let smokeEmissionRate = 0;
+    let lastSmokeTime = 0;
 
     // Animation loop for smooth movement
     function animate() {
-      const bannerBounds = getBannerBounds();
+        const bannerBounds = getBannerBounds();
+        const currentTime = Date.now();
 
-      if (autoPilotMode) {
-        // Auto movement - fly in random directions within banner
-        const dx = targetX - (cursorX - bannerBounds.left);
-        const dy = targetY - (cursorY - bannerBounds.top);
-        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (autoPilotMode) {
+            // Auto movement - fly in random directions within banner
+            const dx = targetX - (cursorX - bannerBounds.left);
+            const dy = targetY - (cursorY - bannerBounds.top);
+            const distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance < 50) {
-          // Set new random target within banner when close to current target
-          targetX = Math.random() * bannerBounds.width;
-          targetY = Math.random() * bannerBounds.height;
+            if (distance < 50) {
+                // Set new random target within banner when close to current target
+                targetX = Math.random() * bannerBounds.width;
+                targetY = Math.random() * bannerBounds.height;
+            } else {
+                // Move toward target
+                cursorX += (dx / distance) * autoSpeed;
+                cursorY += (dy / distance) * autoSpeed;
+
+                // Calculate angle for auto movement
+                let angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+
+                // Smooth the angle transition
+                let angleDiff = angle - lastAngle;
+                if (angleDiff > 180) angleDiff -= 360;
+                if (angleDiff < -180) angleDiff += 360;
+                lastAngle += angleDiff * 0.1;
+
+                // Calculate 3D tilt based on movement direction
+                const tiltX = (dy / distance) * 15; // Bank left/right
+                const tiltY = (dx / distance) * -10; // Pitch up/down
+                
+                // Smooth tilt transitions
+                lastTiltX += (tiltX - lastTiltX) * 0.1;
+                lastTiltY += (tiltY - lastTiltY) * 0.1;
+
+                // Apply 3D rotation with tilt
+                planeImg.style.transform = `rotate(${lastAngle}deg) rotateX(${lastTiltY}deg) rotateY(${lastTiltX}deg)`;
+                
+                // Emit smoke based on speed
+                smokeEmissionRate = Math.min(1, distance / 50) * 0.7;
+            }
         } else {
-          // Move toward target
-          cursorX += (dx / distance) * autoSpeed;
-          cursorY += (dy / distance) * autoSpeed;
+            // Mouse following mode
+            const prevCursorX = cursorX;
+            const prevCursorY = cursorY;
+            
+            cursorX += (mouseX - cursorX) * speed;
+            cursorY += (mouseY - cursorY) * speed;
 
-          // Calculate angle for auto movement
-          let angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+            // Calculate movement speed for smoke emission
+            const moveX = cursorX - prevCursorX;
+            const moveY = cursorY - prevCursorY;
+            const movementSpeed = Math.sqrt(moveX * moveX + moveY * moveY);
+            smokeEmissionRate = Math.min(1, movementSpeed / 10);
 
-          // Smooth the angle transition
-          let angleDiff = angle - lastAngle;
-          if (angleDiff > 180) angleDiff -= 360;
-          if (angleDiff < -180) angleDiff += 360;
-          lastAngle += angleDiff * 0.1;
+            // Calculate rotation based on movement direction
+            const deltaX = mouseX - cursorX;
+            const deltaY = mouseY - cursorY;
 
-          // Apply rotation
-          cursor.querySelector('img').style.transform = `rotate(${lastAngle}deg)`;
+            if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+                let angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI + 90;
+
+                // Smooth the angle transition
+                let angleDiff = angle - lastAngle;
+                if (angleDiff > 180) angleDiff -= 360;
+                if (angleDiff < -180) angleDiff += 360;
+                lastAngle += angleDiff * 0.2;
+
+                // Calculate 3D tilt based on movement speed and direction
+                const moveSpeedX = cursorX - prevCursorX;
+                const moveSpeedY = cursorY - prevCursorY;
+                const speedFactor = Math.min(1, Math.sqrt(moveSpeedX * moveSpeedX + moveSpeedY * moveSpeedY) / 10);
+                
+                const tiltX = (moveSpeedY) * 3 * speedFactor; // Bank based on vertical movement
+                const tiltY = (moveSpeedX) * -2 * speedFactor; // Pitch based on horizontal movement
+                
+                // Smooth tilt transitions
+                lastTiltX += (tiltX - lastTiltX) * 0.2;
+                lastTiltY += (tiltY - lastTiltY) * 0.2;
+
+                // Apply 3D rotation with tilt
+                planeImg.style.transform = `rotate(${lastAngle}deg) rotateX(${lastTiltY}deg) rotateY(${lastTiltX}deg)`;
+            } else {
+                // Gradually return to level flight when not moving much
+                lastTiltX *= 0.9;
+                lastTiltY *= 0.9;
+                planeImg.style.transform = `rotate(${lastAngle}deg) rotateX(${lastTiltY}deg) rotateY(${lastTiltX}deg)`;
+                smokeEmissionRate = 0;
+            }
         }
-      } else {
-        // Mouse following mode
-        cursorX += (mouseX - cursorX) * speed;
-        cursorY += (mouseY - cursorY) * speed;
 
-        // Calculate rotation based on movement direction
-        const deltaX = mouseX - cursorX;
-        const deltaY = mouseY - cursorY;
-
-        if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
-          let angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI + 90;
-
-          // Smooth the angle transition
-          let angleDiff = angle - lastAngle;
-          if (angleDiff > 180) angleDiff -= 360;
-          if (angleDiff < -180) angleDiff += 360;
-          lastAngle += angleDiff * 0.2;
-
-          // Apply rotation
-          cursor.querySelector('img').style.transform = `rotate(${lastAngle}deg)`;
+        // Emit smoke particles
+        if (currentTime - lastSmokeTime > 100 && smokeEmissionRate > 0.1) {
+            // Calculate position at the back of the plane based on its rotation
+            const radAngle = (lastAngle - 90) * Math.PI / 180;
+            const smokeOffsetX = Math.cos(radAngle) * 40; // Further back
+            const smokeOffsetY = Math.sin(radAngle) * 40;
+            
+            const smokeX = cursorX - smokeOffsetX;
+            const smokeY = cursorY - smokeOffsetY;
+            
+            // Create multiple smoke particles for a denser effect
+            for (let i = 0; i < Math.floor(smokeEmissionRate * 3); i++) {
+                createSmokeParticle(smokeX, smokeY, lastAngle);
+            }
+            
+            lastSmokeTime = currentTime;
         }
-      }
 
-      // Keep plane within banner bounds
-      cursorX = Math.max(
-        bannerBounds.left + 30,
-        Math.min(bannerBounds.right - 30, cursorX)
-      );
-      cursorY = Math.max(
-        bannerBounds.top + 30,
-        Math.min(bannerBounds.bottom - 30, cursorY)
-      );
+        // Update existing smoke particles
+        updateSmoke();
 
-      // Apply the new position
-      cursor.style.left = cursorX - cursor.offsetWidth / 2 + 'px';
-      cursor.style.top = cursorY - cursor.offsetHeight / 2 + 'px';
+        // Keep plane within banner bounds
+        cursorX = Math.max(
+            bannerBounds.left + 30,
+            Math.min(bannerBounds.right - 30, cursorX)
+        );
+        cursorY = Math.max(
+            bannerBounds.top + 30,
+            Math.min(bannerBounds.bottom - 30, cursorY)
+        );
 
-      requestAnimationFrame(animate);
+        // Apply the new position
+        cursor.style.left = cursorX - cursor.offsetWidth / 2 + 'px';
+        cursor.style.top = cursorY - cursor.offsetHeight / 2 + 'px';
+
+        requestAnimationFrame(animate);
     }
 
     // Start animation
     animate();
 
-    // Click effect
+    // Click effect - add a barrel roll animation with extra smoke
     banner.addEventListener('click', e => {
-      cursor.classList.add("expand");
-      setTimeout(() => {
-        cursor.classList.remove("expand");
-      }, 500);
+        // Save current transform
+        const currentTransform = planeImg.style.transform;
+        
+        // Add barrel roll animation
+        planeImg.style.transition = 'transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55)';
+        planeImg.style.transform = currentTransform + ' rotateZ(360deg)';
+        
+        // Create burst of smoke
+        for (let i = 0; i < 15; i++) {
+            setTimeout(() => {
+                createSmokeParticle(cursorX, cursorY, lastAngle);
+            }, i * 50);
+        }
+        
+        setTimeout(() => {
+            // Remove the transition and return to normal
+            planeImg.style.transition = 'transform 0.3s ease-out';
+            planeImg.style.transform = currentTransform;
+        }, 800);
     });
 
     // Reset to auto pilot after 5 seconds of no mouse movement over banner
     let mouseTimeout;
     banner.addEventListener('mousemove', () => {
-      clearTimeout(mouseTimeout);
-      mouseTimeout = setTimeout(() => {
-        autoPilotMode = true;
-        // Set a target in a random direction from current position within banner
-        const bannerBounds = getBannerBounds();
-        const angle = Math.random() * Math.PI * 2;
-        targetX = (cursorX - bannerBounds.left) + Math.cos(angle) * 200;
-        targetY = (cursorY - bannerBounds.top) + Math.sin(angle) * 200;
+        clearTimeout(mouseTimeout);
+        mouseTimeout = setTimeout(() => {
+            autoPilotMode = true;
+            // Set a target in a random direction from current position within banner
+            const bannerBounds = getBannerBounds();
+            const angle = Math.random() * Math.PI * 2;
+            targetX = (cursorX - bannerBounds.left) + Math.cos(angle) * 200;
+            targetY = (cursorY - bannerBounds.top) + Math.sin(angle) * 200;
 
-        // Ensure target stays within banner
-        targetX = Math.max(0, Math.min(bannerBounds.width, targetX));
-        targetY = Math.max(0, Math.min(bannerBounds.height, targetY));
-      }, 5000); // 5 seconds
+            // Ensure target stays within banner
+            targetX = Math.max(0, Math.min(bannerBounds.width, targetX));
+            targetY = Math.max(0, Math.min(bannerBounds.height, targetY));
+        }, 5000); // 5 seconds
     });
 
     // Handle window resize
     window.addEventListener('resize', () => {
-      // Update banner bounds and adjust plane position if needed
-      const bannerBounds = getBannerBounds();
+        // Update banner bounds and adjust plane position if needed
+        const bannerBounds = getBannerBounds();
 
-      // Keep plane within the new banner bounds
-      cursorX = Math.max(
-        bannerBounds.left + 30,
-        Math.min(bannerBounds.right - 30, cursorX)
-      );
-      cursorY = Math.max(
-        bannerBounds.top + 30,
-        Math.min(bannerBounds.bottom - 30, cursorY)
-      );
+        // Keep plane within the new banner bounds
+        cursorX = Math.max(
+            bannerBounds.left + 30,
+            Math.min(bannerBounds.right - 30, cursorX)
+        );
+        cursorY = Math.max(
+            bannerBounds.top + 30,
+            Math.min(bannerBounds.bottom - 30, cursorY)
+        );
 
-      cursor.style.left = cursorX - cursor.offsetWidth / 2 + 'px';
-      cursor.style.top = cursorY - cursor.offsetHeight / 2 + 'px';
+        cursor.style.left = cursorX - cursor.offsetWidth / 2 + 'px';
+        cursor.style.top = cursorY - cursor.offsetHeight / 2 + 'px';
     });
-  </script>
+</script>
 </body>
 
 </html>
