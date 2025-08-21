@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Co-Pilot - Plane Cursor</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      color: #000;
+      overflow-x: hidden;
+      background: #222;
+      font-family: "Red Hat Display", sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1395px;
+      margin: 0 auto;
+      padding: 0 15px;
+    }
+
+    .banner {
+      position: relative;
+      z-index: 1;
+      /* cursor: none; */
+      background: linear-gradient(180deg, #363636 0%, #363636 100%);
+    }
+
+    .cloud-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .sky-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 1;
+      mix-blend-mode: darken;
+    }
+
+    .banner-content {
+      position: relative;
+      z-index: 5;
+      text-align: center;
+      padding: 88px 0 330px 0;
+    }
+
+    .banner-content h1 {
+      font-size: 80px;
+      line-height: 104px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #FFFFFF;
+      text-shadow: 0px 4px 12px rgba(0, 0, 0, 0.25);
+      margin: 0 0 15px;
+    }
+
+    .banner-content h1 span {
+      display: block;
+      font-size: 48px;
+      font-weight: 400;
+    }
+
+    .banner-content p {
+      font-weight: 500;
+      font-size: 22px;
+      line-height: 32px;
+      color: #FFFFFF;
+      margin: 0 0 45px;
+    }
+
+    .banner-content form {
+      position: relative;
+      max-width: 965px;
+      margin: 0 auto;
+    }
+
+    .banner-content form input {
+      display: block;
+      width: 100%;
+      height: 65px;
+      background: #F9F9F9;
+      border: 1px solid #EEEEEE;
+      border-radius: 44px;
+      padding: 12px 40px;
+      font-size: 18px;
+    }
+
+    .banner-content form input::placeholder {
+      font-weight: 400;
+      font-size: 18px;
+      line-height: 1;
+      color: #414141;
+    }
+
+    .banner-content form input:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.5);
+    }
+
+    /* Custom cursor with plane */
+    .cursor {
+      position: fixed;
+      width: 120px;
+      height: 120px;
+      pointer-events: none;
+      z-index: 2;
+      transition: transform 0.2s ease-out;
+      transform-origin: center center;
+      left: 0;
+      top: 0;
+    }
+
+    .cursor img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.7));
+      transform-origin: center;
+      transition: all 0.3s ease;
+      transform: rotate(0deg);
+    }
+
+    .cursor.expand img {
+      transform: scale(1.5);
+      filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.8));
+    }
+
+    /* Clouds for background */
+    .cloud {
+      position: absolute;
+      z-index: 2;
+      opacity: 0.5;
+      color: #fff;
+    }
+
+    .cloud1 {
+      top: 15%;
+      left: 5%;
+      font-size: 5rem;
+      animation: float 25s infinite ease-in-out;
+    }
+
+    .cloud2 {
+      top: 25%;
+      right: 10%;
+      font-size: 7rem;
+      animation: float 30s infinite ease-in-out reverse;
+    }
+
+    .cloud3 {
+      bottom: 20%;
+      left: 15%;
+      font-size: 4rem;
+      animation: float 20s infinite ease-in-out;
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0) translateX(0);
+      }
+
+      25% {
+        transform: translateY(-50px) translateX(35px);
+      }
+
+      50% {
+        transform: translateY(40px) translateX(-25px);
+      }
+
+      75% {
+        transform: translateY(-20px) translateX(60px);
+      }
+    }
+
+    /* Responsive design */
+    @media (max-width: 1024px) {
+      .banner-content h1 {
+        font-size: 60px;
+        line-height: 80px;
+      }
+
+      .banner-content h1 span {
+        font-size: 36px;
+      }
+
+      .cursor {
+        width: 90px;
+        height: 90px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .banner-content {
+        padding: 40px 0;
+      }
+
+      .banner-content h1 {
+        font-size: 40px;
+        line-height: 55px;
+      }
+
+      .banner-content h1 span {
+        font-size: 28px;
+      }
+
+      .banner-content p {
+        font-size: 18px;
+        line-height: 28px;
+        margin-bottom: 40px;
+      }
+
+      .banner-content form input {
+        height: 55px;
+        padding: 10px 30px;
+        font-size: 16px;
+      }
+
+      .cursor {
+        width: 60px;
+        height: 60px;
+      }
+
+      .cloud {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <section class="banner">
+
+    <img src="clould-bg.png" alt="" class="cloud-bg">
+    <img src="sky-bg.jpg" alt="" class="sky-bg">
+
+    <!-- Decorative clouds -->
+    <i class="cloud cloud1 fas fa-cloud"></i>
+    <i class="cloud cloud2 fas fa-cloud"></i>
+    <i class="cloud cloud3 fas fa-cloud"></i>
+
+    <!-- Plane cursor -->
+    <div class="cursor">
+      <img src="plane.png" alt="Airplane">
+    </div>
+
+    <div class="container">
+      <div class="banner-content">
+        <h1><span>Your AI Co-Pilot</span> for DGCA CPL & ATPL Exams</h1>
+        <p>Smarter prep starts here — search over 20,000 DGCA questions with AI, take mock tests, track progress, and
+          more.</p>
+        <form>
+          <input type="search" placeholder="Search with AI ">
+        </form>
+      </div>
+    </div>
+  </section>
+
+
+  <section style="padding: 200px 0; background: #FFFFFF; text-align: center; font-size: clamp(50px, 5.208vw, 100px);">
+    for space
+  </section>
+
+  <script>
+    const cursor = document.querySelector('.cursor');
+    const banner = document.querySelector('.banner');
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let cursorX = window.innerWidth / 2;
+    let cursorY = window.innerHeight / 2;
+    let speed = 0.03;
+    let lastAngle = 0;
+    let autoPilotMode = true;
+    let targetX = Math.random() * banner.offsetWidth;
+    let targetY = Math.random() * banner.offsetHeight;
+    let autoSpeed = 2;
+
+    // Get banner position and dimensions
+    function getBannerBounds() {
+      const rect = banner.getBoundingClientRect();
+      return {
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height
+      };
+    }
+
+    // Set initial position within banner
+    const bannerBounds = getBannerBounds();
+    cursorX = bannerBounds.left + (bannerBounds.width / 2);
+    cursorY = bannerBounds.top + (bannerBounds.height / 2);
+    cursor.style.left = cursorX - cursor.offsetWidth / 2 + 'px';
+    cursor.style.top = cursorY - cursor.offsetHeight / 2 + 'px';
+
+    // Update mouse position only when over banner
+    banner.addEventListener('mousemove', e => {
+      mouseX = e.pageX;
+      mouseY = e.pageY;
+      autoPilotMode = false; // Switch to mouse following when mouse moves
+    });
+
+    // Reset to auto pilot when mouse leaves banner
+    banner.addEventListener('mouseleave', () => {
+      autoPilotMode = true;
+    });
+
+    // Animation loop for smooth movement
+    function animate() {
+      const bannerBounds = getBannerBounds();
+
+      if (autoPilotMode) {
+        // Auto movement - fly in random directions within banner
+        const dx = targetX - (cursorX - bannerBounds.left);
+        const dy = targetY - (cursorY - bannerBounds.top);
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < 50) {
+          // Set new random target within banner when close to current target
+          targetX = Math.random() * bannerBounds.width;
+          targetY = Math.random() * bannerBounds.height;
+        } else {
+          // Move toward target
+          cursorX += (dx / distance) * autoSpeed;
+          cursorY += (dy / distance) * autoSpeed;
+
+          // Calculate angle for auto movement
+          let angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+
+          // Smooth the angle transition
+          let angleDiff = angle - lastAngle;
+          if (angleDiff > 180) angleDiff -= 360;
+          if (angleDiff < -180) angleDiff += 360;
+          lastAngle += angleDiff * 0.1;
+
+          // Apply rotation
+          cursor.querySelector('img').style.transform = `rotate(${lastAngle}deg)`;
+        }
+      } else {
+        // Mouse following mode
+        cursorX += (mouseX - cursorX) * speed;
+        cursorY += (mouseY - cursorY) * speed;
+
+        // Calculate rotation based on movement direction
+        const deltaX = mouseX - cursorX;
+        const deltaY = mouseY - cursorY;
+
+        if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+          let angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI + 90;
+
+          // Smooth the angle transition
+          let angleDiff = angle - lastAngle;
+          if (angleDiff > 180) angleDiff -= 360;
+          if (angleDiff < -180) angleDiff += 360;
+          lastAngle += angleDiff * 0.2;
+
+          // Apply rotation
+          cursor.querySelector('img').style.transform = `rotate(${lastAngle}deg)`;
+        }
+      }
+
+      // Keep plane within banner bounds
+      cursorX = Math.max(
+        bannerBounds.left + 30,
+        Math.min(bannerBounds.right - 30, cursorX)
+      );
+      cursorY = Math.max(
+        bannerBounds.top + 30,
+        Math.min(bannerBounds.bottom - 30, cursorY)
+      );
+
+      // Apply the new position
+      cursor.style.left = cursorX - cursor.offsetWidth / 2 + 'px';
+      cursor.style.top = cursorY - cursor.offsetHeight / 2 + 'px';
+
+      requestAnimationFrame(animate);
+    }
+
+    // Start animation
+    animate();
+
+    // Click effect
+    banner.addEventListener('click', e => {
+      cursor.classList.add("expand");
+      setTimeout(() => {
+        cursor.classList.remove("expand");
+      }, 500);
+    });
+
+    // Reset to auto pilot after 5 seconds of no mouse movement over banner
+    let mouseTimeout;
+    banner.addEventListener('mousemove', () => {
+      clearTimeout(mouseTimeout);
+      mouseTimeout = setTimeout(() => {
+        autoPilotMode = true;
+        // Set a target in a random direction from current position within banner
+        const bannerBounds = getBannerBounds();
+        const angle = Math.random() * Math.PI * 2;
+        targetX = (cursorX - bannerBounds.left) + Math.cos(angle) * 200;
+        targetY = (cursorY - bannerBounds.top) + Math.sin(angle) * 200;
+
+        // Ensure target stays within banner
+        targetX = Math.max(0, Math.min(bannerBounds.width, targetX));
+        targetY = Math.max(0, Math.min(bannerBounds.height, targetY));
+      }, 5000); // 5 seconds
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      // Update banner bounds and adjust plane position if needed
+      const bannerBounds = getBannerBounds();
+
+      // Keep plane within the new banner bounds
+      cursorX = Math.max(
+        bannerBounds.left + 30,
+        Math.min(bannerBounds.right - 30, cursorX)
+      );
+      cursorY = Math.max(
+        bannerBounds.top + 30,
+        Math.min(bannerBounds.bottom - 30, cursorY)
+      );
+
+      cursor.style.left = cursorX - cursor.offsetWidth / 2 + 'px';
+      cursor.style.top = cursorY - cursor.offsetHeight / 2 + 'px';
+    });
+  </script>
+</body>
+
+</html>
